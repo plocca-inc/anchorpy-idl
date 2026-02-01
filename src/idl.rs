@@ -113,6 +113,11 @@ impl IdlTypeDefined {
             generics,
         }
     }
+
+    #[getter]
+    pub fn defined(&self) -> String {
+        self.name.clone()
+    }
 }
 
 struct_boilerplate!(IdlTypeDefined);
@@ -466,10 +471,10 @@ impl IdlField {
         Self::py_from_json(raw)
     }
     #[new]
-    pub fn new(name: String, docs: Vec<String>, ty: IdlType) -> Self {
+    pub fn new(name: String, docs: Option<Vec<String>>, ty: IdlType) -> Self {
         anchor_idl::IdlField {
             name,
-            docs,
+            docs: docs.unwrap_or_default(),
             ty: ty.into(),
         }
         .into()
@@ -481,8 +486,12 @@ impl IdlField {
     }
 
     #[getter]
-    pub fn docs(&self) -> Vec<String> {
-        self.0.docs.clone()
+    pub fn docs(&self) -> Option<Vec<String>> {
+        if self.0.docs.is_empty() {
+            None
+        } else {
+            Some(self.0.docs.clone())
+        }
     }
 
     #[getter]
@@ -568,6 +577,16 @@ impl IdlDefinedFieldsNamed {
     pub fn fields(&self) -> Vec<IdlField> {
         self.0.clone()
     }
+
+    fn __iter__(&self, py: Python) -> PyResult<PyObject> {
+        let list = pyo3::types::PyList::new(py, self.0.iter().cloned().map(|f| f.into_py(py)));
+        let iter = pyo3::types::PyIterator::from_object(py, list)?;
+        Ok(iter.into())
+    }
+
+    fn __len__(&self) -> usize {
+        self.0.len()
+    }
 }
 
 struct_boilerplate!(IdlDefinedFieldsNamed);
@@ -592,6 +611,16 @@ impl IdlDefinedFieldsTuple {
     #[getter]
     pub fn fields(&self) -> Vec<IdlType> {
         self.0.clone()
+    }
+
+    fn __iter__(&self, py: Python) -> PyResult<PyObject> {
+        let list = pyo3::types::PyList::new(py, self.0.iter().cloned().map(|f| f.into_py(py)));
+        let iter = pyo3::types::PyIterator::from_object(py, list)?;
+        Ok(iter.into())
+    }
+
+    fn __len__(&self) -> usize {
+        self.0.len()
     }
 }
 
@@ -1400,7 +1429,7 @@ impl IdlInstruction {
     #[new]
     pub fn new(
         name: String,
-        docs: Vec<String>,
+        docs: Option<Vec<String>>,
         discriminator: Vec<u8>,
         accounts: Vec<IdlInstructionAccountItem>,
         args: Vec<IdlField>,
@@ -1408,7 +1437,7 @@ impl IdlInstruction {
     ) -> Self {
         anchor_idl::IdlInstruction {
             name,
-            docs,
+            docs: docs.unwrap_or_default(),
             discriminator,
             accounts: iter_into!(accounts),
             args: iter_into!(args),
@@ -1423,8 +1452,12 @@ impl IdlInstruction {
     }
 
     #[getter]
-    pub fn docs(&self) -> Vec<String> {
-        self.0.docs.clone()
+    pub fn docs(&self) -> Option<Vec<String>> {
+        if self.0.docs.is_empty() {
+            None
+        } else {
+            Some(self.0.docs.clone())
+        }
     }
 
     #[getter]
